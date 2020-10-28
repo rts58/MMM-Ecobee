@@ -1,0 +1,28 @@
+{
+  "name": "mmm-ecobee",
+  "version": "1.0.0",
+  "description": "Ecobee module for MagicMirror2",
+  "main": "MMM-Ecobee.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "./node_modules/.bin/eslint ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/parnic/MMM-Ecobee.git"
+  },
+  "keywords": [
+    "MagicMirror",
+    "Ecobee",
+    "thermostat"
+  ],
+  "author": "Fábio Alves, Parnic",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/parnic/MMM-Ecobee/issues"
+  },
+  "homepage": "https://github.com/parnic/MMM-Ecobee#readme",
+  "devDependencies": {
+    "eslint": "^7.12.1"
+  }
+}
