@@ -82,8 +82,8 @@ Module.register("MMM-Ecobee", {
           /// INFORMATION TABLE
           var currentLogo = document.createElement("td");
           currentLogo.className = "heat logo align-left";
-          var currentLogoIcon = document.createElement("img");
-          currentLogoIcon.src = this.file("images/current_temp.png");
+          var currentLogoIcon = document.createElement("i");
+          currentLogoIcon.classList = ["fas fa-thermometer-half"];
           currentLogo.appendChild(currentLogoIcon);
           eventWrapper.appendChild(currentLogo);
 
