@@ -10,14 +10,14 @@ Module for Magic Mirror that supports ecobee Thermostat
 
 ## Configuration on config.js
 
-```json
+```javascript
 {
   module: 'MMM-Ecobee',
   header: 'ecobee Thermostat',
   position: "top_left",
   config: {
   }
-},
+}
 ```
 
 ## Authorizing the module on your ecobee account
