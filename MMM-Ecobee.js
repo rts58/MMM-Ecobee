@@ -27,7 +27,7 @@ Module.register("MMM-Ecobee", {
       //No data was received and PIN is not working
       wrapper.innerHTML =
         "These are the steps authorize this application to access your Ecobee 3:<br>" +
-        "  1. Go to https://www.ecobee.com/home/ecobeeLogin.jsp<br>" +
+        "  1. Go to <a href='https://auth.ecobee.com/u/login'>https://auth.ecobee.com/u/login</a><br>" +
         "  2. Login to your thermostat console <br>" +
         "  3. Select 'MY APPS' from the menu on the top right.<br>" +
         "  4. Click 'Add Application' <br>" +

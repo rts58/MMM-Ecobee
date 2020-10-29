@@ -7,8 +7,6 @@ const filename = "/tokens.json";
 var configFilename = path.resolve(__dirname + filename);
 
 const appKey = "jY03ZxGNFWNpPxQJ03vviHL028l8zGZT";
-var pin = " ";
-var code = " ";
 
 module.exports = NodeHelper.create({
   start() {
@@ -17,6 +15,10 @@ module.exports = NodeHelper.create({
     console.info("**** Setting the tokens from File!");
     fs.readFile(configFilename, (err, data) => {
       if (err) {
+        if (err.code === 'ENOENT') {
+          return;
+        }
+
         throw err;
       }
 
@@ -26,29 +28,37 @@ module.exports = NodeHelper.create({
     });
   },
 
-  updateSensors() {
-    console.log("Updating sensors with fresh data...");
+  getRequestOptions(path, method, authenticated) {
     var options = {
       hostname: "api.ecobee.com",
       headers: {
-        "Content-Type": "application/json",
-        authorization: "Bearer " + this.access_token
+        "Content-Type": "application/json"
       },
-      path:
-        "/1/thermostat?" +
-        Querystring.stringify({
-          json: JSON.stringify({
-            selection: {
-              selectionType: "registered",
-              includeRuntime: "true",
-              includeSettings: true,
-              selectionMatch: "",
-              includeSensors: true
-            }
-          })
-        }),
-      method: "GET"
+      path: path,
+      method: method
     };
+
+    if (authenticated) {
+      options.headers["authorization"] = `Bearer ${this.access_token}`;
+    }
+
+    return options;
+  },
+
+  updateSensors() {
+    console.log("Updating sensors with fresh data...");
+    var options = this.getRequestOptions("/1/thermostat?" +
+      Querystring.stringify({
+        json: JSON.stringify({
+          selection: {
+            selectionType: "registered",
+            includeRuntime: "true",
+            includeSettings: true,
+            selectionMatch: "",
+            includeSensors: true
+          }
+        })
+      }), "GET", true);
 
     var request = Https.request(options, (response) => {
       var data = "";
@@ -59,29 +69,21 @@ module.exports = NodeHelper.create({
         .on("end", () => {
           var reply = JSON.parse(data);
           console.info(" . ");
-          console.info("Begining of Update Data:");
+          console.info("Beginning of Update Data:");
           console.info(" . ");
           console.info(reply);
           var status = reply["status"] || { code: "default" };
           switch (status["code"]) {
             case 0:
-              console.info(
-                "Data for updating the sensors aquired and sent back"
-              );
+              console.info("Data for updating the sensors acquired and sent back");
               this.sendSocketNotification("UPDATE_MAIN_INFO", reply);
-              //Write to a FILE for checking:
-              // var json = JSON.stringify(reply);
-              // fs.writeFile (__dirname + "/reply.json", json, 'utf8', function (err) {
-              // if (err) throw err;
-              // console.log('File with Reply SAVED!');
-              // });
-
               break;
+
             case 14:
               console.info("Refresh");
-              //this.refresh(this.update);
               this.refresh();
               break;
+
             default:
               console.info(status["message"] + " Re-requesting authorization!");
               this.access_token = null;
@@ -94,7 +96,7 @@ module.exports = NodeHelper.create({
 
     request.on("error", (error) => {
       console.info(error + " Retrying request.");
-      setTimeout(this.update, 1000);
+      setTimeout(() => this.update(), 1000);
     });
 
     request.end();
@@ -102,12 +104,7 @@ module.exports = NodeHelper.create({
 
   refresh(callback) {
     console.info("Refreshing tokens...");
-    var options = {
-      hostname: "api.ecobee.com",
-      headers: { "content-type": "application/x-www-form-urlencoded" },
-      path: "/token",
-      method: "POST"
-    };
+    var options = this.getRequestOptions("/token", "POST");
 
     var request = Https.request(options, (response) => {
       var data = "";
@@ -132,9 +129,7 @@ module.exports = NodeHelper.create({
 
             default:
               //Refreshing error, so we need a new PIN authorization
-              console.info(
-                reply["error_description"] + " Re-requesting authorization!"
-              );
+              console.info(reply["error_description"] + " Re-requesting authorization!");
               this.access_token = null;
               this.refresh_token = null;
               //get a new pin!
@@ -157,7 +152,7 @@ module.exports = NodeHelper.create({
 
     request.on("error", (error) => {
       console.error(error + " Re-requesting authorization! - AGAIN !!");
-      setTimeout(this.pin, 1000);
+      setTimeout(() => this.pin(), 1000);
     });
 
     //console.info(request);
@@ -166,18 +161,12 @@ module.exports = NodeHelper.create({
 
   pin() {
     console.info("@@@@@@@ Requesting authorization code...");
-    var options = {
-      hostname: "api.ecobee.com",
-      headers: { "content-type": "application/x-www-form-urlencoded" },
-      path:
-        "/authorize?" +
-        Querystring.stringify({
-          response_type: "ecobeePin",
-          client_id: appKey,
-          scope: "smartRead"
-        }),
-      method: "GET"
-    };
+    var options = this.getRequestOptions("/authorize?" +
+      Querystring.stringify({
+        response_type: "ecobeePin",
+        client_id: appKey,
+        scope: "smartRead"
+      }), "GET");
 
     var request = Https.request(options, (response) => {
       var data = "";
@@ -189,14 +178,10 @@ module.exports = NodeHelper.create({
           var reply = JSON.parse(data);
           console.info("this is what I am getting from the PIN REQUEST");
           console.info(reply);
-          pin = reply["ecobeePin"];
-          code = reply["code"];
-          console.info(
-            "These are the steps authorize this application to access your Ecobee 3:"
-          );
-          console.info(
-            "  1. Go to https://www.ecobee.com/home/ecobeeLogin.jsp"
-          );
+          var pin = reply["ecobeePin"];
+          var code = reply["code"];
+          console.info("These are the steps authorize this application to access your Ecobee 3:");
+          console.info("  1. Go to https://auth.ecobee.com/u/login");
           console.info("  2. Login to your thermostat console ");
           console.info("  3. Select 'MY APPS' from the menu on the top right.");
           console.info("  4. Click 'Add Application' ");
@@ -222,12 +207,7 @@ module.exports = NodeHelper.create({
   authorize(code) {
     //This keeps checking for authorization code
     console.info("Authorizing plugin to access the thermostat...");
-    var options = {
-      hostname: "api.ecobee.com",
-      headers: { "content-type": "application/x-www-form-urlencoded" },
-      path: "/token",
-      method: "POST"
-    };
+    var options = this.getRequestOptions("/token", "POST");
 
     var request = Https.request(options, (response) => {
       var data = "";
@@ -248,21 +228,22 @@ module.exports = NodeHelper.create({
               this.writeToFile(this.access_token, this.refresh_token);
               this.updateSensors();
               break;
+
             case "authorization_pending":
-              console.info(
-                reply["error_description"] + " Retrying in 30 seconds."
-              );
-              setTimeout(this.authorize, 31 * 1000, code);
+              console.info(reply["error_description"] + " Retrying in 30 seconds.");
+              setTimeout(() => this.authorize(), 31 * 1000, code);
               break;
+
             case "authorization_expired":
               console.info(reply["error_description"]);
               console.info("Expire | 10 minutes.");
               this.pin();
               break;
+
             default:
               console.info(reply["error_description"]);
               console.info("Wait | 10 seconds");
-              setTimeout(this.authorize, 10 * 1000, code);
+              setTimeout(() => this.authorize(), 10 * 1000, code);
               break;
           }
         });
@@ -278,7 +259,7 @@ module.exports = NodeHelper.create({
 
     request.on("error", (error) => {
       console.info(error + " Retrying request.");
-      setTimeout(this.authorize, 1000, code);
+      setTimeout(() => this.authorize(), 1000, code);
     });
 
     request.end();
