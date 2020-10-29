@@ -8,7 +8,7 @@ Module.register("MMM-Ecobee", {
   // Default module config.
   defaults: {
     units: config.units,
-    updateInterval: 5 * 60 * 1000, // updates every minute
+    updateInterval: 5 * 60 * 1000, // updates every 5 minutes
     animationSpeed: 2 * 1000,
     authorization_token: "nada",
     access_token: "acesso default",
@@ -24,19 +24,20 @@ Module.register("MMM-Ecobee", {
     wrapper.className = "small dimmed";
 
     if (this.tempData.length === 0) {
-      //No data was received and PIN is not working
-      wrapper.innerHTML =
-        "These are the steps authorize this application to access your Ecobee 3:<br>" +
-        "  1. Go to <a href='https://auth.ecobee.com/u/login'>https://auth.ecobee.com/u/login</a><br>" +
-        "  2. Login to your thermostat console <br>" +
-        "  3. Select 'MY APPS' from the menu on the top right.<br>" +
-        "  4. Click 'Add Application' <br>" +
-        "  5. Enter the following authorization code: " +
-        "<b>" +
-        this.pin +
-        "</b>";
+      if (this.pin) {
+        wrapper.innerHTML =
+          "These are the steps authorize this application to access your Ecobee:" +
+          "<ol style='text-align: left'>" +
+          "<li> Go to <a href='https://auth.ecobee.com/u/login'>https://auth.ecobee.com/u/login</a><br>" +
+          "<li> Login to your thermostat console <br>" +
+          "<li> Select 'MY APPS' from the menu on the top right.<br>" +
+          "<li> Click 'Add Application' <br>" +
+          "<li> Enter the following authorization code: <b>" + this.pin + "</b>" +
+          "</ol>";
+      } else {
+        wrapper.innerHTML = "<img src='" + this.file("images/loading.gif") + "' width=100>";
+      }
     } else {
-      //iterate tru the reply list for all thermostats
       for (var e in this.tempData.thermostatList) {
         var thermo = this.tempData.thermostatList[e];
 
@@ -154,42 +155,34 @@ Module.register("MMM-Ecobee", {
     }
 
     return wrapper;
-  }, //END OF getDom
+  },
 
-  // Define start sequence.
   start() {
     Log.info("Starting module: " + this.name);
 
     this.tempData = new Array();
-    this.sendSocketNotification("UPDATE_SENSORS");
-    this.scheduleUpdate();
-  }, ///End of START
+    this.updateSensors();
+  },
 
   updateSensors() {
     console.log("**** Updating Sensors Notification");
     this.sendSocketNotification("UPDATE_SENSORS");
+
+    setTimeout(() => this.updateSensors(), this.config.updateInterval);
   },
 
   socketNotificationReceived(notification, payload) {
-    Log.info("**** Ready to receive");
     if (notification === "UPDATE_MAIN_INFO") {
       Log.info("received the payload with the information to update!");
       this.tempData = payload;
       Log.info("1 - XXXXXXXXXX" + this.tempData.thermostatList[0].name);
       this.updateDom();
     } else if (notification === "UPDATE_PIN") {
-      // No working pin was received
       this.tempData = [];
-      this.pin = payload;
-      Log.info("@@@@@@  Updating DOM and PIn with this pin: " + this.pin);
+      this.pin = payload.pin;
+      this.expires_in = payload.expires_in;
+      Log.info("@@@@@@  Updating DOM and PIN with this pin: " + this.pin);
       this.updateDom();
     }
-  },
-
-  scheduleUpdate() {
-    setInterval(() => {
-      this.updateSensors();
-      console.log("ˆˆˆˆ TIME OUT ");
-    }, this.config.updateInterval);
   }
 });

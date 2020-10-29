@@ -46,6 +46,15 @@ module.exports = NodeHelper.create({
   },
 
   updateSensors() {
+    if (!this.access_token) {
+      Logger.log("no valid access token - requesting a new pin");
+      this.pin();
+      return;
+    }
+
+    // todo: poll /thermostatSummary, extract revision, compare before doing a full /thermostat pull.
+    // ref: https://www.ecobee.com/home/developer/api/documentation/v1/operations/get-thermostat-summary.shtml
+
     console.log("Updating sensors with fresh data...");
     var options = this.getRequestOptions("/1/thermostat?" +
       Querystring.stringify({
@@ -72,24 +81,23 @@ module.exports = NodeHelper.create({
           console.info("Beginning of Update Data:");
           console.info(" . ");
           console.info(reply);
-          var status = reply["status"] || { code: "default" };
-          switch (status["code"]) {
-            case 0:
-              console.info("Data for updating the sensors acquired and sent back");
-              this.sendSocketNotification("UPDATE_MAIN_INFO", reply);
-              break;
-
-            case 14:
-              console.info("Refresh");
-              this.refresh();
-              break;
-
-            default:
-              console.info(status["message"] + " Re-requesting authorization!");
-              this.access_token = null;
-              this.refresh_token = null;
-              this.pin();
-              break;
+          var status = reply["status"] || { code: 1 };
+          var code = status["code"];
+          if (code === 0) {
+            console.info("Data for updating the sensors acquired and sent back");
+            this.sendSocketNotification("UPDATE_MAIN_INFO", reply);
+          } else if (code >= 3 && code <= 4) {
+            console.debug("received server-side error code. ignoring.");
+          } else if (code >= 5 && code <= 13) {
+            console.debug("request error. please submit an issue");
+          } else if (code === 14) {
+            console.info("Refresh");
+            this.refresh();
+          } else {
+            console.info(status["message"] + " Re-requesting authorization!");
+            this.access_token = null;
+            this.refresh_token = null;
+            this.pin();
           }
         });
     });
@@ -102,9 +110,15 @@ module.exports = NodeHelper.create({
     request.end();
   },
 
-  refresh(callback) {
+  refresh() {
     console.info("Refreshing tokens...");
-    var options = this.getRequestOptions("/token", "POST");
+    var options = this.getRequestOptions("/token?" +
+      Querystring.stringify({
+        grant_type: "refresh_token",
+        refresh_token: this.refresh_token,
+        client_id: appKey,
+        ecobee_type: "jwt"
+      }), "POST");
 
     var request = Https.request(options, (response) => {
       var data = "";
@@ -121,9 +135,6 @@ module.exports = NodeHelper.create({
               this.access_token = reply["access_token"];
               this.refresh_token = reply["refresh_token"];
               this.writeToFile(this.access_token, this.refresh_token);
-              if (callback) {
-                callback();
-              }
               this.updateSensors(); //after refreshing it will try to update it again
               break;
 
@@ -142,14 +153,6 @@ module.exports = NodeHelper.create({
     // console.info("**** API is: " + appKey);
     // console.info("**** Refresh Token is: " + refresh_token);
 
-    request.write(
-      Querystring.stringify({
-        grant_type: "refresh_token",
-        code: this.refresh_token,
-        client_id: appKey
-      })
-    );
-
     request.on("error", (error) => {
       console.error(error + " Re-requesting authorization! - AGAIN !!");
       setTimeout(() => this.pin(), 1000);
@@ -160,6 +163,11 @@ module.exports = NodeHelper.create({
   },
 
   pin() {
+    if (this.expiration_time && this.expiration_time < new Date()) {
+      console.info("skipping pin request, expiration is pending");
+      return;
+    }
+
     console.info("@@@@@@@ Requesting authorization code...");
     var options = this.getRequestOptions("/authorize?" +
       Querystring.stringify({
@@ -180,19 +188,22 @@ module.exports = NodeHelper.create({
           console.info(reply);
           var pin = reply["ecobeePin"];
           var code = reply["code"];
+          var expires_in = reply["expires_in"];
+          this.expiration_time = new Date();
+          this.expiration_time.setMinutes(this.expiration_time.getMinutes() + expires_in);
           console.info("These are the steps authorize this application to access your Ecobee 3:");
           console.info("  1. Go to https://auth.ecobee.com/u/login");
           console.info("  2. Login to your thermostat console ");
           console.info("  3. Select 'MY APPS' from the menu on the top right.");
           console.info("  4. Click 'Add Application' ");
-          console.info("  5. Enter the following authorization code:");
+          console.info(`  5. Enter the following authorization code in the next ${expires_in} minutes:`);
           console.info("   ┌──────┐  ");
           console.info("   │ " + pin + " │  ");
           console.info("   └──────┘  ");
           console.info("  6. Wait a moment.");
 
           this.authorize(code);
-          this.sendSocketNotification("UPDATE_PIN", pin);
+          this.sendSocketNotification("UPDATE_PIN", { pin, expires_in });
         });
     });
 
@@ -207,7 +218,13 @@ module.exports = NodeHelper.create({
   authorize(code) {
     //This keeps checking for authorization code
     console.info("Authorizing plugin to access the thermostat...");
-    var options = this.getRequestOptions("/token", "POST");
+    var options = this.getRequestOptions("/token?" +
+      Querystring.stringify({
+        grant_type: "ecobeePin",
+        client_id: appKey,
+        code: code,
+        ecobee_type: "jwt"
+      }), "POST");
 
     var request = Https.request(options, (response) => {
       var data = "";
@@ -231,7 +248,7 @@ module.exports = NodeHelper.create({
 
             case "authorization_pending":
               console.info(reply["error_description"] + " Retrying in 30 seconds.");
-              setTimeout(() => this.authorize(), 31 * 1000, code);
+              setTimeout(() => this.authorize(code), 31 * 1000, code);
               break;
 
             case "authorization_expired":
@@ -243,23 +260,15 @@ module.exports = NodeHelper.create({
             default:
               console.info(reply["error_description"]);
               console.info("Wait | 10 seconds");
-              setTimeout(() => this.authorize(), 10 * 1000, code);
+              setTimeout(() => this.authorize(code), 10 * 1000, code);
               break;
           }
         });
     });
 
-    request.write(
-      Querystring.stringify({
-        grant_type: "ecobeePin",
-        client_id: appKey,
-        code: code
-      })
-    );
-
     request.on("error", (error) => {
       console.info(error + " Retrying request.");
-      setTimeout(() => this.authorize(), 1000, code);
+      setTimeout(() => this.authorize(code), 1000, code);
     });
 
     request.end();
