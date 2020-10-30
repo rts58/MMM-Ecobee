@@ -10,3 +10,23 @@
 .MMM-Ecobee .current_temp{
   padding-right: 5px;
 }
+.MMM-Ecobee svg {
+  stroke: white;
+  height: 30px;
+}
+
+.MMM-Ecobee .stroke-no-motion {
+  stroke: none;
+}
+
+.MMM-Ecobee .stroke-heat-color {
+  stroke: #F99B1F;
+}
+
+.MMM-Ecobee .stroke-cool-color {
+  stroke: #36C3EA;
+}
+
+.MMM-Ecobee .stroke-thermostat-color {
+  stroke: #D28DE0;
+}
