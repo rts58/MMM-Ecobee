@@ -47,7 +47,7 @@ module.exports = NodeHelper.create({
 
   updateSensors() {
     if (!this.access_token) {
-      Logger.log("no valid access token - requesting a new pin");
+      console.log("no valid access token - requesting a new pin");
       this.pin();
       return;
     }
@@ -163,7 +163,7 @@ module.exports = NodeHelper.create({
   },
 
   pin() {
-    if (this.expiration_time && this.expiration_time < new Date()) {
+    if (this.expiration_time && this.expiration_time > new Date()) {
       console.info("skipping pin request, expiration is pending");
       return;
     }
