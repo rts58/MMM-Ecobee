@@ -354,10 +354,11 @@ Module.register("MMM-Ecobee", {
   },
 
   updateSensors() {
-    console.log("**** Updating Sensors Notification");
+    Log.info("**** Updating Sensors Notification");
     this.sendSocketNotification("UPDATE_SENSORS");
 
-    setTimeout(() => this.updateSensors(), this.config.updateInterval);
+    // prevent exceeding the minimum refresh interval for our app key
+    setTimeout(() => this.updateSensors(), Math.max(this.config.updateInterval, 3 * 60 * 1000));
   },
 
   socketNotificationReceived(notification, payload) {
