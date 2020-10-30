@@ -5,7 +5,6 @@
  * MIT Licensed.
  */
 Module.register("MMM-Ecobee", {
-  // Default module config.
   defaults: {
     units: config.units,
     updateInterval: 5 * 60 * 1000, // updates every 5 minutes
@@ -41,7 +40,6 @@ Module.register("MMM-Ecobee", {
       for (var e in this.tempData.thermostatList) {
         var thermo = this.tempData.thermostatList[e];
 
-        //getting Settings from the Main Thermostat
         var hvacMode = thermo.settings.hvacMode;
         var desiredHeat = Math.round(thermo.runtime.desiredHeat / 10);
         var desiredCool = Math.round(thermo.runtime.desiredCool / 10);
@@ -51,28 +49,24 @@ Module.register("MMM-Ecobee", {
           var eventWrapper = document.createElement("tr");
           eventWrapper.className = "normal";
 
-          //Add LOGO
           var symbolWrapper = document.createElement("td");
           symbolWrapper.className = "icon";
-          var deviceType = document.createElement("img");
           if (device.type === "thermostat") {
             switch (hvacMode) {
               case "off":
-                deviceType.src = this.file("images/g_thermo_off.png");
+                symbolWrapper.appendChild(this.getThermostatSVG("OFF"));
                 break;
               default:
-                deviceType.src = this.file("images/g_thermo_on.png");
+                symbolWrapper.appendChild(this.getThermostatSVG("ON"));
                 break;
             }
           } else {
             if (device.capability[1].value === "true") {
-              //There is motion
-              deviceType.src = this.file("images/sensor_motion.png");
+              symbolWrapper.appendChild(this.getSensorSVG(true));
             } else {
-              deviceType.src = this.file("images/sensor_no_motion.png");
+              symbolWrapper.appendChild(this.getSensorSVG(false));
             }
           }
-          symbolWrapper.appendChild(deviceType);
           eventWrapper.appendChild(symbolWrapper);
 
           var titleWrapper = document.createElement("td");
@@ -80,7 +74,6 @@ Module.register("MMM-Ecobee", {
           titleWrapper.className = "title";
           eventWrapper.appendChild(titleWrapper);
 
-          /// INFORMATION TABLE
           var currentLogo = document.createElement("td");
           currentLogo.className = "heat logo align-left";
           var currentLogoIcon = document.createElement("i");
@@ -93,38 +86,25 @@ Module.register("MMM-Ecobee", {
           currentTemp.innerHTML = Math.round(device.capability[0].value / 10);
           eventWrapper.appendChild(currentTemp);
 
-          // IF DEVICE is Thermostat and NOT SENSOR
           if (device.type === "thermostat") {
             var programLogo = document.createElement("td");
             programLogo.className = "program logo align-center";
-            var programLogoIcon = document.createElement("img");
 
-            //Different Temperature/LOGO to display depending on the program
-
-            var temperatureToDisplay;
-            var iconToDisplay;
-
+            var temperatureToDisplay = "";
             switch (hvacMode) {
               case "cool":
                 temperatureToDisplay = desiredCool;
-                iconToDisplay = "images/g_cool.png";
+                programLogo.appendChild(this.getColdSVG());
                 break;
               case "heat":
                 temperatureToDisplay = desiredHeat;
-                iconToDisplay = "images/g_heat.png";
+                programLogo.appendChild(this.getHeatSVG());
                 break;
               case "auto":
                 temperatureToDisplay = desiredCool + " - " + desiredHeat;
-                iconToDisplay = "images/g_auto.png";
-                break;
-              default:
-                //off
-                temperatureToDisplay = "";
-                iconToDisplay = "images/g_off.png";
+                programLogo.appendChild(this.getAutoSVG());
                 break;
             }
-            programLogoIcon.src = this.file(iconToDisplay);
-            programLogo.appendChild(programLogoIcon);
             eventWrapper.appendChild(programLogo);
 
             var currentProgram = document.createElement("td");
@@ -143,10 +123,6 @@ Module.register("MMM-Ecobee", {
             eventWrapper.appendChild(currentTemp);
           }
 
-          //secondTable.appendChild(informationTR);
-          //eventWrapper.appendChild(midTable);
-
-          //Add information
           wrapper.appendChild(eventWrapper);
         }
       }
@@ -171,25 +147,27 @@ Module.register("MMM-Ecobee", {
       "        <line stroke-linecap=\"round\" stroke-miterlimit=\"10\" x1=\"10.371\" y1=\"14.077\" x2=\"10.371\" y2=\"21.664\" />" +
       "    </g>" +
       "</g>" +
-    "</svg>";
+      "</svg>";
     return span;
   },
 
-  getSensorSVG() {
+  getSensorSVG(hasMotion) {
     var span = document.createElement("span");
     span.innerHTML = "<svg version=\"1.1\" id=\"sensor-motion\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\"" +
-    "    x=\"0px\" y=\"0px\" viewBox=\"0 0 48 57\" xml:space=\"preserve\">" +
-    "    <path d=\"M3.803,57.005c-0.385,0-0.698-0.324-0.698-0.722c0-0.398,0.313-0.722,0.698-0.722h14.038v-6.869h-5.756" +
-    "        C5.42,48.691,0,43.198,0,36.445V23.08c0-6.753,5.42-12.247,12.084-12.247H25.29c6.664,0,12.084,5.494,12.084,12.247v13.365" +
-    "        c0,6.753-5.42,12.246-12.084,12.246h-6.049v6.869h14.296c0.386,0,0.699,0.324,0.699,0.722c0,0.398-0.313,0.722-0.699,0.722H3.803z" +
-    "        M12.084,12.278c-5.893,0-10.687,4.846-10.687,10.802v13.365c0,5.956,4.794,10.802,10.687,10.802H25.29" +
-    "        c5.893,0,10.684-4.846,10.684-10.802V23.08c0-5.957-4.791-10.802-10.684-10.802H12.084z\" />" +
-    "    <path class=\"motion\" d=\"M42.699,17.762" +
-    "        c-0.385,0-0.698-0.324-0.698-0.722c0-5.957-4.792-10.802-10.684-10.802c-0.386,0-0.702-0.324-0.702-0.722" +
-    "        c0-0.398,0.316-0.722,0.702-0.722c6.664,0,12.084,5.493,12.084,12.246C43.401,17.439,43.085,17.762,42.699,17.762z M47.294,9.417" +
-    "        c-0.386,0-0.701-0.324-0.701-0.722c0-3.998-3.217-7.25-7.174-7.25c-0.386,0-0.699-0.324-0.699-0.722C38.72,0.324,39.033,0,39.418,0" +
-    "        c4.727,0,8.574,3.9,8.574,8.695C47.992,9.093,47.679,9.417,47.294,9.417z\" />" +
-    "</svg>";
+      "    x=\"0px\" y=\"0px\" viewBox=\"0 0 48 57\" xml:space=\"preserve\">" +
+      "    <path d=\"M3.803,57.005c-0.385,0-0.698-0.324-0.698-0.722c0-0.398,0.313-0.722,0.698-0.722h14.038v-6.869h-5.756" +
+      "        C5.42,48.691,0,43.198,0,36.445V23.08c0-6.753,5.42-12.247,12.084-12.247H25.29c6.664,0,12.084,5.494,12.084,12.247v13.365" +
+      "        c0,6.753-5.42,12.246-12.084,12.246h-6.049v6.869h14.296c0.386,0,0.699,0.324,0.699,0.722c0,0.398-0.313,0.722-0.699,0.722H3.803z" +
+      "        M12.084,12.278c-5.893,0-10.687,4.846-10.687,10.802v13.365c0,5.956,4.794,10.802,10.687,10.802H25.29" +
+      "        c5.893,0,10.684-4.846,10.684-10.802V23.08c0-5.957-4.791-10.802-10.684-10.802H12.084z\" />";
+    if (hasMotion) {
+      span.innerHTML += "    <path d=\"M42.699,17.762" +
+        "        c-0.385,0-0.698-0.324-0.698-0.722c0-5.957-4.792-10.802-10.684-10.802c-0.386,0-0.702-0.324-0.702-0.722" +
+        "        c0-0.398,0.316-0.722,0.702-0.722c6.664,0,12.084,5.493,12.084,12.246C43.401,17.439,43.085,17.762,42.699,17.762z M47.294,9.417" +
+        "        c-0.386,0-0.701-0.324-0.701-0.722c0-3.998-3.217-7.25-7.174-7.25c-0.386,0-0.699-0.324-0.699-0.722C38.72,0.324,39.033,0,39.418,0" +
+        "        c4.727,0,8.574,3.9,8.574,8.695C47.992,9.093,47.679,9.417,47.294,9.417z\" />";
+    }
+    span.innerHTML += "</svg>";
     return span;
   },
 
@@ -309,10 +287,7 @@ Module.register("MMM-Ecobee", {
 
   getThermostatSVG(label) {
     var span = document.createElement("span");
-    span.style = "position: absolute";
-
-    var svg = document.createElement("span");
-    svg.innerHTML = "<svg version=\"1.1\" id=\"ecobee\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" x=\"0px\"" +
+    span.innerHTML = "<svg version=\"1.1\" id=\"ecobee\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" x=\"0px\"" +
       "    y=\"0px\" viewBox=\"0 0 57 57\" style=\"height: 35px\" xml:space=\"preserve\">" +
       "    <g>" +
       "        <g>" +
@@ -329,15 +304,45 @@ Module.register("MMM-Ecobee", {
       "                C42.751,30.302,41.944,31.109,40.952,31.109z\" />" +
       "        </g>" +
       "    </g>" +
+      "    <text x=\"0.25em\" y=\"1.85em\" textLength=\"1.8rem\" lengthAdjust=\"spacingAndGlyphs\">" + label + "</text>" +
       "</svg>";
-    
-    var labelElem = document.createElement("span");
-    labelElem.style = "position: absolute; top: 13px; left: 4px; font-size: 10px";
-    labelElem.innerHTML = label;
+    return span;
+  },
 
-    span.appendChild(svg);
-    span.appendChild(labelElem);
+  getAutoSVG() {
+    var span = document.createElement("span");
+    span.innerHTML = "<svg viewbox=\"139 80 42 32\">" +
+      "  <style type=\"text/css\">" +
+      "    .system-mode-heat-on>.heat-icon {" +
+      "      stroke: #F99B1F" +
+      "    }" +
 
+      "    .system-mode-cool-on>.cool-icon {" +
+      "      stroke: #56C0EA" +
+      "    }" +
+      "  </style>" +
+      "  <g id=\"autoIcon\" class=\"\">" +
+      "    <line class=\"cool-icon\" x1=\"153\" y1=\"81.2\" x2=\"153\" y2=\"110.9\"></line>" +
+      "    <polyline class=\"cool-icon\" points=\"150.3,108.9 153,106.2 155.8,108.9\"></polyline>" +
+      "    <polyline class=\"cool-icon\" points=\"150.3,105.6 153,102.9 155.8,105.6\"></polyline>" +
+      "    <polyline class=\"cool-icon\" points=\"155.8,83.2 153,85.9 150.3,83.2\"></polyline>" +
+      "    <polyline class=\"cool-icon\" points=\"155.8,86.5 153,89.2 150.3,86.5\"></polyline>" +
+      "    <line class=\"cool-icon\" x1=\"153\" y1=\"81.2\" x2=\"153\" y2=\"110.9\"></line>" +
+      "    <polyline class=\"cool-icon\" points=\"150.3,108.9 153,106.2 155.8,108.9\"></polyline>" +
+      "    <polyline class=\"cool-icon\" points=\"150.3,105.6 153,102.9 155.8,105.6\"></polyline>" +
+      "    <polyline class=\"cool-icon\" points=\"140.4,99.7 144.1,100.8 143,104.5\"></polyline>" +
+      "    <polyline class=\"cool-icon\" points=\"143.3,98.1 147,99.3 145.9,103\"></polyline>" +
+      "    <line class=\"cool-icon\" x1=\"156.3\" y1=\"94.3\" x2=\"139.9\" y2=\"103.1\"></line>" +
+      "    <polyline class=\"cool-icon\" points=\"140.4,99.7 144.1,100.8 143,104.5\"></polyline>" +
+      "    <polyline class=\"cool-icon\" points=\"143.3,98.1 147,99.3 145.9,103\"></polyline>" +
+      "    <polyline class=\"cool-icon\" points=\"143,87.6 144.1,91.3 140.4,92.4\"></polyline>" +
+      "    <polyline class=\"cool-icon\" points=\"145.9,89.1 147,92.8 143.3,93.9\"></polyline>" +
+      "    <line class=\"cool-icon\" x1=\"155.2\" y1=\"97.2\" x2=\"140\" y2=\"89\"></line>" +
+      "    <polyline class=\"cool-icon\" points=\"143,87.6 144.1,91.3 140.4,92.4\"></polyline>" +
+      "    <polyline class=\"cool-icon\" points=\"145.9,89.1 147,92.8 143.3,93.9\"></polyline>" +
+      "    <path class=\"heat-icon\" d=\"M167.9,81.6c0.1,0.5,0.1,1,0,1.6c-0.1,1.8-0.7,3.5-1.8,5c-0.8,1.1-1.7,2.2-2.7,3.2l0,0 c-2.4,2.6-3.8,5.9-4.1,9.4l0,0c0,5.6,4.6,10.2,10.2,10.1h0.1c5.7,0,10.4-4.6,10.4-10.3v-0.3c-0.1-1.4-0.4-2.7-1.1-4 c0,2.3-1.9,4.2-4.3,4.2c-1.2,0-2.4-0.5-3.3-1.3c-0.7-0.8-1-1.9-0.9-2.9l0,0c0.1-0.5,0.2-1,0.4-1.4l0,0 C173.3,90.4,172.1,84.7,167.9,81.6z\"></path>" +
+      "  </g>" +
+      "</svg>";
     return span;
   },
 
