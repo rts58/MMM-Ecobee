@@ -46,11 +46,18 @@ module.exports = NodeHelper.create({
   },
 
   updateSensors() {
+    if (this.updatingSensors) {
+      console.log("already updating sensors, skipping re-entrancy");
+      return;
+    }
+
     if (!this.access_token) {
       console.log("no valid access token - requesting a new pin");
       this.pin();
       return;
     }
+
+    this.updatingSensors = true;
 
     // todo: poll /thermostatSummary, extract revision, compare before doing a full /thermostat pull.
     // ref: https://www.ecobee.com/home/developer/api/documentation/v1/operations/get-thermostat-summary.shtml
@@ -99,12 +106,17 @@ module.exports = NodeHelper.create({
             this.refresh_token = null;
             this.pin();
           }
+
+          this.updatingSensors = false;
         });
     });
 
     request.on("error", (error) => {
       console.info(error + " Retrying request.");
-      setTimeout(() => this.update(), 1000);
+      setTimeout(() => {
+        this.updatingSensors = false;
+        this.updateSensors()
+      }, 1000);
     });
 
     request.end();
