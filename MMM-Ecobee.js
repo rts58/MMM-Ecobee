@@ -46,6 +46,20 @@ Module.register("MMM-Ecobee", {
 
         for (var x in thermo.remoteSensors) {
           var device = thermo.remoteSensors[x];
+
+          var capTemperature = null;
+          var capHumidity = null;
+          var capOccupancy = null;
+          for (var cap in device.capability) {
+            if (device.capability[cap].type === "temperature") {
+              capTemperature = device.capability[cap];
+            } else if (device.capability[cap].type === "occupancy") {
+              capOccupancy = device.capability[cap];
+            } else if (device.capability[cap].type === "humidity") {
+              capHumidity = device.capability[cap];
+            }
+          }
+
           var eventWrapper = document.createElement("tr");
           eventWrapper.className = "normal";
 
@@ -61,10 +75,12 @@ Module.register("MMM-Ecobee", {
                 break;
             }
           } else {
-            if (device.capability[1].value === "true") {
-              symbolWrapper.appendChild(this.getSensorSVG(true));
-            } else {
-              symbolWrapper.appendChild(this.getSensorSVG(false));
+            if (capOccupancy) {
+              if (capOccupancy.value === "true") {
+                symbolWrapper.appendChild(this.getSensorSVG(true));
+              } else {
+                symbolWrapper.appendChild(this.getSensorSVG(false));
+              }
             }
           }
           eventWrapper.appendChild(symbolWrapper);
@@ -82,8 +98,10 @@ Module.register("MMM-Ecobee", {
           eventWrapper.appendChild(currentLogo);
 
           var currentTemp = document.createElement("td");
-          currentTemp.className = "current_temp";
-          currentTemp.innerHTML = Math.round(device.capability[0].value / 10);
+          if (capTemperature) {
+            currentTemp.className = "current_temp";
+            currentTemp.innerHTML = Math.round(capTemperature.value / 10);
+          }
           eventWrapper.appendChild(currentTemp);
 
           if (device.type === "thermostat") {
@@ -118,8 +136,10 @@ Module.register("MMM-Ecobee", {
             eventWrapper.appendChild(humLogo);
 
             currentTemp = document.createElement("td");
-            currentTemp.className = "current Humidity align-left";
-            currentTemp.innerHTML = device.capability[1].value + "%";
+            if (capHumidity) {
+              currentTemp.className = "current Humidity align-left";
+              currentTemp.innerHTML = capHumidity.value + "%";
+            }
             eventWrapper.appendChild(currentTemp);
           }
 
