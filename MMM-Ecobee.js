@@ -371,8 +371,11 @@ Module.register("MMM-Ecobee", {
     Log.info("Starting module: " + this.name);
 
     this.tempData = new Array();
-    this.sendSocketNotification("ECOBEE_RECEIVE_CONFIG", this.config);
     this.sendSocketNotification("UPDATE_SENSORS");
+
+    setInterval(() => {
+      this.sendSocketNotification("ECOBEE_PING");
+    }, 3 * 60 * 1000);
   },
 
   socketNotificationReceived(notification, payload) {
@@ -387,6 +390,9 @@ Module.register("MMM-Ecobee", {
       this.expires_in = payload.expires_in;
       Log.info("@@@@@@  Updating DOM and PIN with this pin: " + this.pin);
       this.updateDom();
+    } else if (notification === "ECOBEE_SEND_CONFIG") {
+      this.sendSocketNotification("ECOBEE_RECEIVE_CONFIG", this.config);
+      this.sendSocketNotification("UPDATE_SENSORS");
     }
   }
 });

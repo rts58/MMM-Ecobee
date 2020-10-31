@@ -300,8 +300,10 @@ module.exports = NodeHelper.create({
     if (notification === "UPDATE_SENSORS") {
       if (this.lastData) {
         this.sendSocketNotification("UPDATE_MAIN_INFO", this.lastData);
-      } else {
+      } else if (this.config) {
         this.updateSensors();
+      } else {
+        this.sendSocketNotification("ECOBEE_SEND_CONFIG");
       }
     } else if (notification === "ECOBEE_RECEIVE_CONFIG") {
       if (this.sensor_update_handle) {
@@ -318,6 +320,10 @@ module.exports = NodeHelper.create({
       this.sensor_update_handle = setInterval(() => this.updateSensors(), update_interval);
 
       this.config = payload;
+    } else if (notification === "ECOBEE_PING") {
+      if (!this.config) {
+        this.sendSocketNotification("ECOBEE_SEND_CONFIG");
+      }
     }
   }
 });
