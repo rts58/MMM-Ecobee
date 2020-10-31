@@ -53,7 +53,7 @@ module.exports = NodeHelper.create({
 
     if (!this.access_token) {
       console.log("no valid access token - requesting a new pin");
-      this.pin();
+      this.getPin();
       return;
     }
 
@@ -93,6 +93,7 @@ module.exports = NodeHelper.create({
           if (code === 0) {
             console.info("Data for updating the sensors acquired and sent back");
             this.sendSocketNotification("UPDATE_MAIN_INFO", reply);
+            this.lastData = reply;
           } else if (code >= 3 && code <= 4) {
             console.debug("received server-side error code. ignoring.");
           } else if (code >= 5 && code <= 13) {
@@ -104,7 +105,7 @@ module.exports = NodeHelper.create({
             console.info(status["message"] + " Re-requesting authorization!");
             this.access_token = null;
             this.refresh_token = null;
-            this.pin();
+            this.getPin();
           }
 
           this.updatingSensors = false;
@@ -156,7 +157,7 @@ module.exports = NodeHelper.create({
               this.access_token = null;
               this.refresh_token = null;
               //get a new pin!
-              this.pin();
+              this.getPin();
               break;
           }
         });
@@ -167,16 +168,16 @@ module.exports = NodeHelper.create({
 
     request.on("error", (error) => {
       console.error(error + " Re-requesting authorization! - AGAIN !!");
-      setTimeout(() => this.pin(), 1000);
+      setTimeout(() => this.getPin(), 1000);
     });
 
     //console.info(request);
     request.end();
   },
 
-  pin() {
+  getPin() {
     if (this.expiration_time && this.expiration_time > new Date()) {
-      console.info("skipping pin request, expiration is pending");
+      this.sendPinUpdate();
       return;
     }
 
@@ -198,24 +199,23 @@ module.exports = NodeHelper.create({
           var reply = JSON.parse(data);
           console.info("this is what I am getting from the PIN REQUEST");
           console.info(reply);
-          var pin = reply["ecobeePin"];
-          var code = reply["code"];
-          var expires_in = reply["expires_in"];
+          this.pin = reply["ecobeePin"];
+          this.expires_in = reply["expires_in"];
           this.expiration_time = new Date();
-          this.expiration_time.setMinutes(this.expiration_time.getMinutes() + expires_in);
+          this.expiration_time.setMinutes(this.expiration_time.getMinutes() + this.expires_in);
           console.info("These are the steps authorize this application to access your Ecobee 3:");
           console.info("  1. Go to https://auth.ecobee.com/u/login");
           console.info("  2. Login to your thermostat console ");
           console.info("  3. Select 'MY APPS' from the menu on the top right.");
           console.info("  4. Click 'Add Application' ");
-          console.info(`  5. Enter the following authorization code in the next ${expires_in} minutes:`);
+          console.info(`  5. Enter the following authorization code in the next ${this.expires_in} minutes:`);
           console.info("   ┌──────┐  ");
-          console.info("   │ " + pin + " │  ");
+          console.info("   │ " + this.pin + " │  ");
           console.info("   └──────┘  ");
           console.info("  6. Wait a moment.");
 
-          this.authorize(code);
-          this.sendSocketNotification("UPDATE_PIN", { pin, expires_in });
+          this.authorize(reply["code"]);
+          this.sendPinUpdate();
         });
     });
 
@@ -225,6 +225,10 @@ module.exports = NodeHelper.create({
     });
 
     request.end();
+  },
+
+  sendPinUpdate() {
+    this.sendSocketNotification("UPDATE_PIN", { pin: this.pin, expires_in: this.expires_in });
   },
 
   authorize(code) {
@@ -266,7 +270,7 @@ module.exports = NodeHelper.create({
             case "authorization_expired":
               console.info(reply["error_description"]);
               console.info("Expire | 10 minutes.");
-              this.pin();
+              this.getPin();
               break;
 
             default:
@@ -287,17 +291,33 @@ module.exports = NodeHelper.create({
   },
 
   writeToFile(accessToken, refreshToken) {
-    // Write the new codes to file
-    // var obj = {Tokens: []};
-    // obj.Tokens.push({access_token: access_token, refresh_token: refresh_token});
     var obj = { access_token: accessToken, refresh_token: refreshToken };
     var json = JSON.stringify(obj);
     fs.writeFileSync(configFilename, json, "utf8");
   },
 
-  socketNotificationReceived(notification) {
+  socketNotificationReceived(notification, payload) {
     if (notification === "UPDATE_SENSORS") {
-      this.updateSensors();
+      if (this.lastData) {
+        this.sendSocketNotification("UPDATE_MAIN_INFO", this.lastData);
+      } else {
+        this.updateSensors();
+      }
+    } else if (notification === "ECOBEE_RECEIVE_CONFIG") {
+      if (this.sensor_update_handle) {
+        clearInterval(this.sensor_update_handle);
+      }
+
+      var update_interval = payload.updateInterval;
+      if (this.config) {
+        update_interval = Math.min(this.config.updateInterval, payload.updateInterval);
+      }
+      // ensure we don't exceed the minimum from the host
+      update_interval = Math.max(update_interval, 3 * 60 * 1000);
+
+      this.sensor_update_handle = setInterval(() => this.updateSensors(), update_interval);
+
+      this.config = payload;
     }
   }
 });
