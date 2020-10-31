@@ -27,10 +27,10 @@ Module.register("MMM-Ecobee", {
         wrapper.innerHTML =
           "These are the steps authorize this application to access your Ecobee:" +
           "<ol style='text-align: left'>" +
-          "<li> Go to <a href='https://auth.ecobee.com/u/login'>https://auth.ecobee.com/u/login</a><br>" +
-          "<li> Login to your thermostat console <br>" +
-          "<li> Select 'MY APPS' from the menu on the top right.<br>" +
-          "<li> Click 'Add Application' <br>" +
+          "<li> Go to <a href='https://auth.ecobee.com/u/login'>https://auth.ecobee.com/u/login</a>" +
+          "<li> Login to your thermostat console" +
+          "<li> Select 'MY APPS' from the menu on the top right." +
+          "<li> Click 'Add Application'" +
           "<li> Enter the following authorization code: <b>" + this.pin + "</b>" +
           "</ol>";
       } else {
