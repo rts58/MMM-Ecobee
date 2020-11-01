@@ -15,6 +15,7 @@
 
 .MMM-Ecobee svg {
   stroke: #999;
+  fill: none;
   height: 30px;
 }
 
