@@ -7,6 +7,7 @@
 Module.register("MMM-Ecobee", {
   defaults: {
     updateInterval: 5 * 60 * 1000, // updates every 5 minutes
+    showSensors: true
   },
 
   getStyles() {
@@ -41,6 +42,10 @@ Module.register("MMM-Ecobee", {
 
         for (var x in thermo.remoteSensors) {
           var device = thermo.remoteSensors[x];
+
+          if (!this.config.showSensors && device.type !== "thermostat") {
+            continue;
+          }
 
           var capTemperature = null;
           var capHumidity = null;

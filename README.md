@@ -40,3 +40,4 @@ If a code is not used for a long time (Magic Mirror is off, module is turned off
 | **Option** | **Default** | **Description** |
 | --- | --- | --- |
 | `updateInterval` | `5 * 60 * 1000` | How often to update the thermostat's data, in milliseconds. Defaults to 5 minutes. This cannot be less than 3 minutes, per ecobee. |
+| `showSensors` | `true` | If true, will show thermostat(s) as well as remote sensor(s). If false, will only show thermostat(s). |
