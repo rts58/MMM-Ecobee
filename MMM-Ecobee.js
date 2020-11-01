@@ -1,17 +1,12 @@
 /* Magic Mirror
  * Module: MMM-Ecobee
  *
- * By Fábio Alves
+ * By Fábio Alves and Parnic
  * MIT Licensed.
  */
 Module.register("MMM-Ecobee", {
   defaults: {
-    units: config.units,
     updateInterval: 5 * 60 * 1000, // updates every 5 minutes
-    animationSpeed: 2 * 1000,
-    authorization_token: "nada",
-    access_token: "acesso default",
-    refresh_token: "autualizao default"
   },
 
   getStyles() {
@@ -41,8 +36,8 @@ Module.register("MMM-Ecobee", {
         var thermo = this.tempData.thermostatList[e];
 
         var hvacMode = thermo.settings.hvacMode;
-        var desiredHeat = Math.round(thermo.runtime.desiredHeat / 10);
-        var desiredCool = Math.round(thermo.runtime.desiredCool / 10);
+        var desiredHeat = this.getTemperature(thermo, thermo.runtime.desiredHeat);
+        var desiredCool = this.getTemperature(thermo, thermo.runtime.desiredCool);
 
         for (var x in thermo.remoteSensors) {
           var device = thermo.remoteSensors[x];
@@ -89,7 +84,7 @@ Module.register("MMM-Ecobee", {
           var currentTemp = document.createElement("td");
           if (capTemperature) {
             currentTemp.className = "current_temp";
-            currentTemp.innerHTML = Math.round(capTemperature.value / 10);
+            currentTemp.innerHTML = this.getTemperature(thermo, capTemperature.value);
           }
           eventWrapper.appendChild(currentTemp);
 
@@ -138,6 +133,14 @@ Module.register("MMM-Ecobee", {
     }
 
     return wrapper;
+  },
+
+  getTemperature(thermo, temperature) {
+    if (thermo && thermo.settings && !thermo.settings.useCelsius) {
+      return Math.round(temperature / 10);
+    }
+
+    return Math.round(((temperature / 10) - 32) / 1.8);
   },
 
   getHumiditySVG() {
