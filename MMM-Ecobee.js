@@ -66,13 +66,10 @@ Module.register("MMM-Ecobee", {
           var symbolWrapper = document.createElement("td");
           symbolWrapper.className = "icon";
           if (device.type === "thermostat") {
-            switch (hvacMode) {
-              case "off":
-                symbolWrapper.appendChild(this.getThermostatSVG("OFF"));
-                break;
-              default:
-                symbolWrapper.appendChild(this.getThermostatSVG("ON"));
-                break;
+            if (device.inUse) {
+              symbolWrapper.appendChild(this.getThermostatSVG("ON"));
+            } else {
+              symbolWrapper.appendChild(this.getThermostatSVG("OFF"));
             }
           } else {
             if (capOccupancy) {
