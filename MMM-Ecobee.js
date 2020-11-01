@@ -74,9 +74,9 @@ Module.register("MMM-Ecobee", {
           } else {
             if (capOccupancy) {
               if (capOccupancy.value === "true") {
-                symbolWrapper.appendChild(this.getSensorSVG(true));
+                symbolWrapper.appendChild(this.getSensorSVG(true, device.inUse));
               } else {
-                symbolWrapper.appendChild(this.getSensorSVG(false));
+                symbolWrapper.appendChild(this.getSensorSVG(false, device.inUse));
               }
             }
           }
@@ -168,7 +168,7 @@ Module.register("MMM-Ecobee", {
     return span;
   },
 
-  getSensorSVG(hasMotion) {
+  getSensorSVG(hasMotion, inUse) {
     var span = document.createElement("span");
     var contents = "<svg version=\"1.1\" id=\"sensor-motion\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\"" +
       "    x=\"0px\" y=\"0px\" viewBox=\"0 0 48 57\" xml:space=\"preserve\">" +
@@ -184,7 +184,11 @@ Module.register("MMM-Ecobee", {
         "        c-0.386,0-0.701-0.324-0.701-0.722c0-3.998-3.217-7.25-7.174-7.25c-0.386,0-0.699-0.324-0.699-0.722C38.72,0.324,39.033,0,39.418,0" +
         "        c4.727,0,8.574,3.9,8.574,8.695C47.992,9.093,47.679,9.417,47.294,9.417z";
     }
-    contents += "\" /></svg>";
+    contents += "\" />";
+    if (typeof inUse === "boolean") {
+      contents += "<text x=\"0.2em\" y=\"1.85em\" textLength=\"1.8rem\" lengthAdjust=\"spacingAndGlyphs\">" + (inUse ? "ON" : "OFF") + "</text>";
+    }
+    contents += "</svg>";
     span.innerHTML = contents;
     return span;
   },
