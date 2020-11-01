@@ -66,18 +66,10 @@ Module.register("MMM-Ecobee", {
           var symbolWrapper = document.createElement("td");
           symbolWrapper.className = "icon";
           if (device.type === "thermostat") {
-            if (device.inUse) {
-              symbolWrapper.appendChild(this.getThermostatSVG("ON"));
-            } else {
-              symbolWrapper.appendChild(this.getThermostatSVG("OFF"));
-            }
+            symbolWrapper.appendChild(this.getThermostatSVG(device.inUse));
           } else {
             if (capOccupancy) {
-              if (capOccupancy.value === "true") {
-                symbolWrapper.appendChild(this.getSensorSVG(true, device.inUse));
-              } else {
-                symbolWrapper.appendChild(this.getSensorSVG(false, device.inUse));
-              }
+              symbolWrapper.appendChild(this.getSensorSVG(capOccupancy.value === "true", device.inUse));
             }
           }
           eventWrapper.appendChild(symbolWrapper);
@@ -307,7 +299,7 @@ Module.register("MMM-Ecobee", {
     return span;
   },
 
-  getThermostatSVG(label) {
+  getThermostatSVG(inUse) {
     var span = document.createElement("span");
     span.innerHTML = "<svg version=\"1.1\" id=\"ecobee\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" x=\"0px\"" +
       "    y=\"0px\" viewBox=\"0 0 57 57\" style=\"height: 35px\" xml:space=\"preserve\">" +
@@ -326,7 +318,7 @@ Module.register("MMM-Ecobee", {
       "                C42.751,30.302,41.944,31.109,40.952,31.109z\" />" +
       "        </g>" +
       "    </g>" +
-      "    <text x=\"0.25em\" y=\"1.85em\" textLength=\"1.8rem\" lengthAdjust=\"spacingAndGlyphs\">" + label + "</text>" +
+      "    <text x=\"0.25em\" y=\"1.85em\" textLength=\"1.8rem\" lengthAdjust=\"spacingAndGlyphs\">" + (inUse ? "ON" : "OFF") + "</text>" +
       "</svg>";
     return span;
   },
