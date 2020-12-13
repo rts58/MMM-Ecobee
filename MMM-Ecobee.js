@@ -7,7 +7,9 @@
 Module.register("MMM-Ecobee", {
   defaults: {
     updateInterval: 5 * 60 * 1000, // updates every 5 minutes
-    showSensors: true
+    showSensors: true,
+    showHumidity: true,
+    showSetTemperature: true
   },
 
   getStyles() {
@@ -94,42 +96,46 @@ Module.register("MMM-Ecobee", {
           eventWrapper.appendChild(currentTemp);
 
           if (device.type === "thermostat") {
-            var programLogo = document.createElement("td");
-            programLogo.className = "program logo align-center";
+            if (this.config.showSetTemperature) {
+              var programLogo = document.createElement("td");
+              programLogo.className = "program logo align-center";
 
-            var temperatureToDisplay = "";
-            switch (hvacMode) {
-              case "cool":
-                temperatureToDisplay = desiredCool;
-                programLogo.appendChild(this.getColdSVG());
-                break;
-              case "heat":
-                temperatureToDisplay = desiredHeat;
-                programLogo.appendChild(this.getHeatSVG());
-                break;
-              case "auto":
-                temperatureToDisplay = desiredCool + " - " + desiredHeat;
-                programLogo.appendChild(this.getAutoSVG());
-                break;
+              var temperatureToDisplay = "";
+              switch (hvacMode) {
+                case "cool":
+                  temperatureToDisplay = desiredCool;
+                  programLogo.appendChild(this.getColdSVG());
+                  break;
+                case "heat":
+                  temperatureToDisplay = desiredHeat;
+                  programLogo.appendChild(this.getHeatSVG());
+                  break;
+                case "auto":
+                  temperatureToDisplay = desiredCool + " - " + desiredHeat;
+                  programLogo.appendChild(this.getAutoSVG());
+                  break;
+              }
+              eventWrapper.appendChild(programLogo);
+
+              var currentProgram = document.createElement("td");
+              currentProgram.className = "current_program";
+              currentProgram.innerHTML = temperatureToDisplay;
+              eventWrapper.appendChild(currentProgram);
             }
-            eventWrapper.appendChild(programLogo);
 
-            var currentProgram = document.createElement("td");
-            currentProgram.className = "current_program";
-            currentProgram.innerHTML = temperatureToDisplay;
-            eventWrapper.appendChild(currentProgram);
+            if (this.config.showHumidity) {
+              var humLogo = document.createElement("td");
+              humLogo.className = "program logo align-right";
+              humLogo.appendChild(this.getHumiditySVG());
+              eventWrapper.appendChild(humLogo);
 
-            var humLogo = document.createElement("td");
-            humLogo.className = "program logo align-right";
-            humLogo.appendChild(this.getHumiditySVG());
-            eventWrapper.appendChild(humLogo);
-
-            currentTemp = document.createElement("td");
-            if (capHumidity) {
-              currentTemp.className = "current Humidity align-left";
-              currentTemp.innerHTML = capHumidity.value + "%";
+              var currentHum = document.createElement("td");
+              if (capHumidity) {
+                currentHum.className = "current Humidity align-left";
+                currentHum.innerHTML = capHumidity.value + "%";
+              }
+              eventWrapper.appendChild(currentHum);
             }
-            eventWrapper.appendChild(currentTemp);
           }
 
           wrapper.appendChild(eventWrapper);
