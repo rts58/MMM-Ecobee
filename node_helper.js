@@ -6,7 +6,7 @@ var Querystring = require("querystring");
 const filename = "/tokens.json";
 var configFilename = path.resolve(__dirname + filename);
 
-const appKey = "jY03ZxGNFWNpPxQJ03vviHL028l8zGZT";
+const appKey = "2QlmTWwvuFI7MIEazjhkvPKTiyQGxb0Y";
 
 module.exports = NodeHelper.create({
   start() {
