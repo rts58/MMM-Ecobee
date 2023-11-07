@@ -102,7 +102,7 @@ module.exports = NodeHelper.create({
             console.info("Refresh");
             this.refresh();
           } else {
-            console.info(status["message"] + " Re-requesting authorization!");
+            console.info(status["message"] + " (code " + code + ") Re-requesting authorization!");
             this.access_token = null;
             this.refresh_token = null;
             this.getPin();
@@ -152,6 +152,20 @@ module.exports = NodeHelper.create({
               break;
 
             default:
+              if (reply["error_description"] && reply["error_description"] === "rejecting request of a tenant under quarantine") {
+                console.info(`Received transient error "${reply["error_description"]}" - waiting to try to refresh again...`);
+                setTimeout(() => {
+                  this.refresh();
+                }, 30 * 1000);
+                break;
+              } else if (reply["error_description"] && reply["error_description"] === "Global rate limit exceeded") {
+                console.info(`Received transient error "${reply["error_description"]}" - waiting to try to refresh again...`);
+                setTimeout(() => {
+                  this.refresh();
+                }, 60 * 1000);
+                break;
+              }
+
               //Refreshing error, so we need a new PIN authorization
               console.info(reply["error_description"] + " Re-requesting authorization!");
               this.access_token = null;
@@ -209,9 +223,9 @@ module.exports = NodeHelper.create({
           console.info("  3. Select 'MY APPS' from the menu on the top right.");
           console.info("  4. Click 'Add Application' ");
           console.info(`  5. Enter the following authorization code in the next ${this.expires_in} minutes:`);
-          console.info("   ┌──────┐  ");
+          console.info("   ┌───────────┐  ");
           console.info("   │ " + this.pin + " │  ");
-          console.info("   └──────┘  ");
+          console.info("   └───────────┘  ");
           console.info("  6. Wait a moment.");
 
           this.authorize(reply["code"]);
