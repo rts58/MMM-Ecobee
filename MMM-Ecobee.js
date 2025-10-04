@@ -391,6 +391,7 @@ Module.register("MMM-Ecobee", {
       this.tempData = payload;
       Log.info("1 - XXXXXXXXXX" + this.tempData.thermostatList[0].name);
       this.updateDom();
+	  this.sendNotification("BRIDGE_UPDATE", payload);  //added for MMM-Thermostat-Bridge
     } else if (notification === "UPDATE_PIN") {
       this.tempData = [];
       this.pin = payload.pin;
