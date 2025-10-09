@@ -387,16 +387,16 @@ Module.register("MMM-Ecobee", {
 
   socketNotificationReceived(notification, payload) {
     if (notification === "UPDATE_MAIN_INFO") {
-      Log.info("received the payload with the information to update!");
+//      Log.info("received the payload with the information to update!");
       this.tempData = payload;
-      Log.info("1 - XXXXXXXXXX" + this.tempData.thermostatList[0].name);
+//      Log.info("1 - XXXXXXXXXX" + this.tempData.thermostatList[0].name);
       this.updateDom();
 	  this.sendNotification("BRIDGE_UPDATE", payload);  //added for MMM-Thermostat-Bridge
     } else if (notification === "UPDATE_PIN") {
       this.tempData = [];
       this.pin = payload.pin;
       this.expires_in = payload.expires_in;
-      Log.info("@@@@@@  Updating DOM and PIN with this pin: " + this.pin);
+//      Log.info("@@@@@@  Updating DOM and PIN with this pin: " + this.pin);
       this.updateDom();
     } else if (notification === "ECOBEE_SEND_CONFIG") {
       this.sendSocketNotification("ECOBEE_RECEIVE_CONFIG", this.config);
