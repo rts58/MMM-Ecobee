@@ -85,10 +85,10 @@ module.exports = NodeHelper.create({
         })
         .on("end", () => {
           var reply = JSON.parse(data);
-          console.info(" . ");
-          console.info("Beginning of Update Data:");
-          console.info(" . ");
-          console.info(reply);
+//          console.info(" . ");
+          console.info("Ecobee Update Data:");
+//          console.info(" . ");
+//          console.info(reply);
           var status = reply["status"] || { code: 1 };
           var code = status["code"];
           if (code === 0) {
